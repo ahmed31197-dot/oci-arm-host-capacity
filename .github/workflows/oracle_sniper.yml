@@ -44,3 +44,16 @@ jobs:
           OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
           TELEGRAM_USER_ID: ${{ secrets.TELEGRAM_USER_ID }}
           TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
+      - name: Telegram Health Check
+        if: always() # Runs even if the sniper script fails (which it will, due to capacity)
+        run: |
+          STATUS="🔍 Sniper Status: Active and Hunting"
+          if [[ "${{ job.status }}" == "success" ]]; then
+            MSG="✅ $STATUS\n📍 Region: ${{ secrets.OCI_REGION }}\n🛠 Shape: VM.Standard.A1.Flex\n📡 Result: Handshake Valid, Waiting for Capacity."
+          else
+            MSG="⚠️ $STATUS\n❌ Alert: The workflow encountered a runner error. Check GitHub Actions logs."
+          fi
+          
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_API_KEY }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_USER_ID }} \
+          -d text="$MSG"
